@@ -1,5 +1,5 @@
-const price = 0; // Update with actual price
-const cid = []; // Update with actual cash-in-drawer data
+let price = 3.26; // Update with actual price
+let cid = [["PENNY", 0.01], ["NICKEL", 0], ["DIME", 0], ["QUARTER", 0], ["ONE", 1], ["FIVE", 0], ["TEN", 0], ["TWENTY", 0], ["ONE HUNDRED", 0]]; // Update with actual cash-in-drawer data
 
 function checkCashRegister(price, cid) {
     let cash = document.getElementById("cash").value;
@@ -9,7 +9,10 @@ function checkCashRegister(price, cid) {
 
     // Insufficient funds
     if (changeDue < 0) {
+        alert("Customer does not have enough money to purchase the item");
         return { status: "INSUFFICIENT_FUNDS" };
+    }  else if(changeDue === 0){
+        alert("No change due - customer paid with exact cash");
     }
 
     // Check if exact change can be provided
