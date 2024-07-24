@@ -1,88 +1,88 @@
-let price = 3.26; // Update with actual price
-let cid = [["PENNY", 0.01], ["NICKEL", 0], ["DIME", 0], ["QUARTER", 0], ["ONE", 1], ["FIVE", 0], ["TEN", 0], ["TWENTY", 0], ["ONE HUNDRED", 0]]; // Update with actual cash-in-drawer data
+let price = 3.26;
+let cid = [["PENNY", 1.01], ["NICKEL", 2.05], ["DIME", 3.1], ["QUARTER", 4.25], ["ONE", 90], ["FIVE", 55], ["TEN", 20], ["TWENTY", 60], ["ONE HUNDRED", 100]];
+let changeDueElement = document.getElementById("change-due");
 
-function checkCashRegister(price, cid) {
-    let cash = document.getElementById("cash").value;
-    cash = parseFloat(cash);
-
-    let changeDue = cash - price;
-
-    // Insufficient funds
-    if (changeDue < 0) {
-        alert("Customer does not have enough money to purchase the item");
-        return { status: "INSUFFICIENT_FUNDS" };
-    }  else if(changeDue === 0){
-        alert("No change due - customer paid with exact cash");
-    }
-
-    // Check if exact change can be provided
-    let change = cid.reduce((acc, curr) => {
-        acc[curr[0]] = curr[1];
-        return acc;
-    }, {});
-
-    let availableChange = calculateChange(change, changeDue);
-
-    // Check if available change can cover due amount
-    if (availableChange === 0) {
-        return { status: "CLOSED" };
-    } else if (availableChange < changeDue) {
-        return { status: "INSUFFICIENT_FUNDS" };
-    }
-
-    // Return change details
-    return { status: "OPEN", change: availableChange };
-}
-
-function calculateChange(change, changeDue) {
-    const units = {
+let cash = document.getElementById("cash");
+const checkCashRegister = (price, cash, cid) => {
+    const UNIT_AMOUNT = {
         "PENNY": 0.01,
         "NICKEL": 0.05,
-        "DIME": 0.1,
+        "DIME": 0.10,
         "QUARTER": 0.25,
-        "ONE": 1,
-        "FIVE": 5,
-        "TEN": 10,
-        "TWENTY": 20,
-        "ONE HUNDRED": 100,
+        "ONE": 1.00,
+        "FIVE": 5.00,
+        "TEN": 10.00,
+        "TWENTY": 20.00,
+        "ONE HUNDRED": 100.00
     };
 
-    let changeObj = {};
-    for (let unit in units) {
-        changeObj[unit] = 0;
-        // Loop until changeDue is 0 or available change unit is depleted
-        while (changeDue >= units[unit] && change[unit] > 0) {
-            changeDue -= units[unit];
-            changeObj[unit]++;
-            change[unit] -= 1;
+    let totalCID = 0;
+    if(price > cash){
+        alert("Customer does not have enough money to purchase the item");
+        return { status: "INSUFFICIENT_FUNDS", change: [] };
+    }
+
+    for (let element of cid) {
+        totalCID += element[1];
+    }
+    totalCID = totalCID.toFixed(2);
+    let changeToGive = (cash - price).toFixed(2);
+    const changeArray = [];
+
+    console.log(changeToGive);
+    console.log(totalCID);
+    if (Number(changeToGive) > Number(totalCID)) {
+        console.log("what");
+        return { status: "INSUFFICIENT_FUNDS", change: changeArray };
+    } else if (changeToGive === totalCID) {
+        return { status: "CLOSED", change: cid };
+    } else {
+        cid = cid.reverse();
+        for (let elem of cid) {
+            let temp = [elem[0], 0];
+            while (changeToGive >= UNIT_AMOUNT[elem[0]] && elem[1] > 0) {
+                temp[1] += UNIT_AMOUNT[elem[0]];
+                elem[1] -= UNIT_AMOUNT[elem[0]];
+                changeToGive -= UNIT_AMOUNT[elem[0]];
+                changeToGive = changeToGive.toFixed(2);
+            }
+            if (temp[1] > 0) {
+                changeArray.push(temp);
+            }
         }
     }
-
-    // Check if remaining changeDue can't be fulfilled
-    if (changeDue > 0.001) { // Added check for very small remainders due to floating-point precision
-        return 0;
+    console.log(changeToGive);
+    if (changeToGive > 0) {
+        return { status: "INSUFFICIENT_FUNDS", change: [] };
     }
 
-    // Format change object to string
-    let changeString = "";
-    for (let unit in changeObj) {
-        if (changeObj[unit] > 0) {
-            changeString += `${unit}: $${changeObj[unit].toFixed(2)} `;
+    return { status: "OPEN", change: changeArray };
+}
+
+function formString(status, changeList){
+    let result ="Status: " + status +" ";
+    for (let i = 0; i < changeList.length; i++) {
+        if(changeList[i][1] > 0){
+            result += changeList[i][0] + ": $" + changeList[i][1].toFixed(2) + " ";
         }
     }
-
-    return changeString;
+    return result.trim();
 }
 
 const purchaseButton = document.getElementById("purchase-btn");
 purchaseButton.addEventListener("click", () => {
-    let result = checkCashRegister(price, cid);
+    let result = checkCashRegister(price, Number(cash.value), cid);
     let changeDueDiv = document.getElementById("change-due");
-    changeDueDiv.innerText = result.status === "OPEN" ? result.change : result.status;
 
-    if (result.status === "INSUFFICIENT_FUNDS") {
-        alert("Customer does not have enough money to purchase the item");
+    if(result.status === "OPEN"){
+        if(result.change.length > 0){
+            changeDueDiv.innerText = formString(result.status, result.change);
+        } else {
+            changeDueDiv.innerText = "No change due - customer paid with exact cash";
+        }
+    } else if (result.status === "INSUFFICIENT_FUNDS") {
+        changeDueDiv.innerText = "Status: " + result.status;
     } else if (result.status === "CLOSED") {
-        changeDueDiv.innerText = "No change due - customer paid with exact cash";
+        changeDueDiv.innerText = formString(result.status, result.change);
     }
 });
